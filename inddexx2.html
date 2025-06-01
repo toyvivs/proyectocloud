@@ -1,0 +1,113 @@
+﻿<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>CONTROL DE ACCESO</title>
+    <style>
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            min-height: 100vh;
+            background-color: #cfbd98;
+            margin: 0;
+            color: #6e541a;
+        }
+
+        .container {
+            background-color: #ebebeb;
+            padding: 40px;
+            border-radius: 15px;
+            box-shadow: 0 8px 16px rgba(0, 0, 0, 0.2);
+            text-align: center;
+            width: 95%;
+            max-width: 1400px;
+        }
+
+        h1 {
+            color: #2c3e50;
+            margin-bottom: 30px;
+            font-size: 5.5em;
+        }
+
+        .zone-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+            gap: 25px;
+            margin-top: 30px;
+        }
+
+        .zone-card {
+            background-color: #f8f9fa;
+            border: 1px solid #dee2e6;
+            border-radius: 12px;
+            padding: 30px;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+        }
+
+        .zone-card:hover {
+            transform: translateY(-8px);
+            box-shadow: 0 12px 24px rgba(0, 0, 0, 0.2);
+            background-color: #c7c2bc;
+            border-color: #c7c2bc;
+        }
+
+        .zone-card h2 {
+            margin-top: 0;
+            color: #2c3e50;
+            font-size: 2.8em;
+            margin-bottom: 15px;
+        }
+
+        .zone-card p {
+            color: #6c757d;
+            font-size: 2.1em;
+            line-height: 1.6;
+        }
+
+        .zone-icon {
+            font-size: 5em;
+            margin-bottom: 15px;
+            color: #5faee3;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>BIENVENIDO</h1>
+        <p>Por favor, seleccione la zona a la que desea acceder:</p>
+
+        <div class="zone-grid">
+            <div class="zone-card" onclick="selectZone('almacen')">
+                <span class="zone-icon">📦</span> <h2>Almacén</h2>
+                <p>Acceso a la zona de inventario y mercancías.</p>
+            </div>
+            <div class="zone-card" onclick="selectZone('oficina')">
+                <span class="zone-icon">🏢</span>
+                <h2>Oficina</h2>
+                <p>Área de trabajo para el personal administrativo.</p>
+            </div>
+            <div class="zone-card" onclick="selectZone('mostrador')">
+                <span class="zone-icon">🛒</span>
+                <h2>Mostrador</h2>
+                <p>Zona de atención al cliente y ventas.</p>
+            </div>
+        </div>
+    </div>
+    <script>
+        function selectZone(zone) {
+            localStorage.setItem('selectedZone', zone);
+            window.location.href = 'rfid-reader.html';
+        }
+    </script>
+</body>
+</html>
