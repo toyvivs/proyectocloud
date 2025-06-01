@@ -1,86 +1,143 @@
 <!DOCTYPE html>
-<html lang="en">
+<html lang="es">
 <head>
-<meta charset="utf-8" />
-<meta name="viewport" content="width=device-width, initial-scale=1.0" />
-<title>CONTROL DE ACCESO</title>
-<style>
-/* Tu CSS aquí (sin cambios) */
-</style>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>CONTROL DE ACCESO</title>
+  <style>
+    body {
+      font-family: Arial, sans-serif;
+      background-color: #f4f4f4;
+      padding: 20px;
+      text-align: center;
+    }
+
+    .container {
+      max-width: 800px;
+      margin: auto;
+      background: #fff;
+      padding: 40px;
+      border-radius: 10px;
+      box-shadow: 0 0 15px rgba(0, 0, 0, 0.1);
+    }
+
+    .zone-grid {
+      display: flex;
+      justify-content: space-around;
+      margin-top: 30px;
+      flex-wrap: wrap;
+    }
+
+    .zone-card {
+      background: #e0e0e0;
+      padding: 20px;
+      border-radius: 10px;
+      width: 200px;
+      margin: 10px;
+      cursor: pointer;
+      transition: transform 0.2s ease, background-color 0.3s;
+    }
+
+    .zone-card:hover {
+      background: #c0c0c0;
+      transform: scale(1.05);
+    }
+
+    .zone-icon {
+      font-size: 3em;
+      display: block;
+      margin-bottom: 10px;
+    }
+
+    #registros {
+      margin-top: 40px;
+      text-align: left;
+    }
+
+    #registros p {
+      background: #fff;
+      padding: 10px;
+      margin: 5px 0;
+      border-left: 4px solid #007bff;
+    }
+  </style>
 </head>
 <body>
-<div class="container">
-  <h1>BIENVENIDO</h1>
-  <p>Por favor, seleccione la zona a la que desea acceder:</p>
+  <div class="container">
+    <h1>BIENVENIDO</h1>
+    <p>Por favor, seleccione la zona a la que desea acceder:</p>
 
-  <div class="zone-grid">
-    <div class="zone-card" onclick="selectZone('almacen')">
-      <span class="zone-icon">📦</span>
-      <h2>Almacén</h2>
-      <p>Acceso a la zona de inventario y mercancías.</p>
-    </div>
-    <div class="zone-card" onclick="selectZone('oficina')">
-      <span class="zone-icon">🏢</span>
-      <h2>Oficina</h2>
-      <p>Área de trabajo para el personal administrativo.</p>
-    </div>
-    <div class="zone-card" onclick="selectZone('mostrador')">
-      <span class="zone-icon">🛒</span>
-      <h2>Mostrador</h2>
-      <p>Zona de atención al cliente y ventas.</p>
+    <div class="zone-grid">
+      <div class="zone-card" onclick="selectZone('almacen')">
+        <span class="zone-icon">📦</span>
+        <h2>Almacén</h2>
+        <p>Acceso a la zona de inventario y mercancías.</p>
+      </div>
+      <div class="zone-card" onclick="selectZone('oficina')">
+        <span class="zone-icon">🏢</span>
+        <h2>Oficina</h2>
+        <p>Área de trabajo para el personal administrativo.</p>
+      </div>
+      <div class="zone-card" onclick="selectZone('mostrador')">
+        <span class="zone-icon">🛒</span>
+        <h2>Mostrador</h2>
+        <p>Zona de atención al cliente y ventas.</p>
+      </div>
     </div>
   </div>
-</div>
 
-<div id="registros"></div>
+  <div class="container">
+    <h2>Registros recientes</h2>
+    <div id="registros">
+      <p>Cargando registros...</p>
+    </div>
+  </div>
 
-<script>
-function selectZone(zone) {
-  localStorage.setItem('selectedZone', zone);
-  window.location.href = 'rfid-reader.html';
-}
-</script>
-
-<!-- Carga Firebase con compat -->
-<script src="https://www.gstatic.com/firebasejs/9.22.2/firebase-app-compat.js"></script>
-<script src="https://www.gstatic.com/firebasejs/9.22.2/firebase-database-compat.js"></script>
-
-<script>
-  // Configuración Firebase (corrige el storageBucket si es necesario)
-  const firebaseConfig = {
-    apiKey: "AIzaSyAAsaf9Xqi1sMGUmC606xh-wFpOQr0UxKQ",
-    authDomain: "database-72189.firebaseapp.com",
-    databaseURL: "https://database-72189-default-rtdb.firebaseio.com",
-    projectId: "database-72189",
-    storageBucket: "database-72189.appspot.com",
-    messagingSenderId: "444896561881",
-    appId: "1:444896561881:web:1d51ab7cd3a8e9b0ca4cc8",
-    measurementId: "G-0V5TV38RQS"
-  };
-
-  // Inicializar Firebase (modo compat)
-  firebase.initializeApp(firebaseConfig);
-
-  // Referencia a la base de datos
-  const database = firebase.database();
-
-  // Leer datos de /registros en tiempo real
-  const registrosRef = database.ref('registros');
-  registrosRef.on('value', (snapshot) => {
-    const data = snapshot.val();
-    const container = document.getElementById('registros');
-    container.innerHTML = ''; // Limpiar contenedor
-
-    if (data) {
-      for (const uid in data) {
-        const entry = data[uid];
-        container.innerHTML += `<p><strong>${uid}</strong>: ${entry.mensaje} - ${entry.timestamp}</p>`;
-      }
-    } else {
-      container.innerHTML = '<p>No hay registros.</p>';
+  <script>
+    function selectZone(zone) {
+      localStorage.setItem('selectedZone', zone);
+      window.location.href = 'rfid-reader.html';
     }
-  });
-</script>
+  </script>
 
+  <!-- Firebase SDK compat -->
+  <script src="https://www.gstatic.com/firebasejs/9.22.2/firebase-app-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/9.22.2/firebase-database-compat.js"></script>
+
+  <script>
+    const firebaseConfig = {
+      apiKey: "AIzaSyAAsaf9Xqi1sMGUmC606xh-wFpOQr0UxKQ",
+      authDomain: "database-72189.firebaseapp.com",
+      databaseURL: "https://database-72189-default-rtdb.firebaseio.com",
+      projectId: "database-72189",
+      storageBucket: "database-72189.appspot.com",
+      messagingSenderId: "444896561881",
+      appId: "1:444896561881:web:1d51ab7cd3a8e9b0ca4cc8",
+      measurementId: "G-0V5TV38RQS"
+    };
+
+    firebase.initializeApp(firebaseConfig);
+    const db = firebase.database();
+
+    // Escuchar registros en tiempo real
+    const registrosRef = db.ref('registros');
+    registrosRef.on('value', (snapshot) => {
+      const data = snapshot.val();
+      const contenedor = document.getElementById('registros');
+      contenedor.innerHTML = '';
+
+      if (data) {
+        const zonaFiltro = localStorage.getItem('selectedZone'); // mostrar registros según zona seleccionada
+        for (const uid in data) {
+          const registro = data[uid];
+          if (!zonaFiltro || registro.zona === zonaFiltro) {
+            contenedor.innerHTML += `<p><strong>${uid}</strong>: ${registro.mensaje} - ${registro.zona || "zona desconocida"} - ${registro.timestamp}</p>`;
+          }
+        }
+      } else {
+        contenedor.innerHTML = '<p>No hay registros disponibles.</p>';
+      }
+    });
+  </script>
 </body>
 </html>
