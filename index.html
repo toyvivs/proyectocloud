@@ -60,6 +60,12 @@
       font-size: 1.2em;
       color: #333;
     }
+
+    .error {
+      color: red;
+      font-weight: bold;
+      margin-top: 20px;
+    }
   </style>
 </head>
 <body>
@@ -70,6 +76,8 @@
     <div class="mensaje esperando" id="mensaje">Esperando...</div>
     <div class="nombre" id="nombre"></div>
   </div>
+
+  <div id="error" class="error"></div>
 
   <!-- Firebase -->
   <script src="https://www.gstatic.com/firebasejs/9.22.2/firebase-app-compat.js"></script>
@@ -90,7 +98,6 @@
     firebase.initializeApp(firebaseConfig);
     const db = firebase.database();
 
-    // Rutas de las zonas según tu estructura Firebase
     const zonas = [
       { nombre: "almacen", ruta: "accesos/almacen" },
       { nombre: "oficina", ruta: "accesos/oficina" },
@@ -100,11 +107,16 @@
     const zonaDiv = document.getElementById('zona');
     const mensajeDiv = document.getElementById('mensaje');
     const nombreDiv = document.getElementById('nombre');
+    const errorDiv = document.getElementById('error');
 
     async function getLastRegistro(ruta) {
       try {
         const res = await fetch(`https://database-72189-default-rtdb.firebaseio.com/${ruta}.json`);
+        if (!res.ok) throw new Error(`HTTP error! status: ${res.status}`);
+
         const data = await res.json();
+        console.log(`Datos recibidos de ${ruta}:`, data);
+
         if (!data) return null;
 
         const keys = Object.keys(data);
@@ -114,11 +126,14 @@
         return { ...data[lastKey], timestamp: data[lastKey].timestamp || 0 };
       } catch (error) {
         console.error("Error obteniendo datos de Firebase:", error);
+        errorDiv.textContent = `Error al obtener datos de ${ruta}: ${error.message}`;
         return null;
       }
     }
 
     async function verificarAcceso() {
+      errorDiv.textContent = ''; // limpia errores cada ciclo
+
       let ultimo = null;
 
       for (let z of zonas) {
@@ -147,7 +162,6 @@
       }
     }
 
-    // Actualiza cada 2 segundos
     setInterval(verificarAcceso, 2000);
     verificarAcceso();
   </script>
