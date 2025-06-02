@@ -1,1 +1,127 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>Control de Acceso</title>
+  <style>
+    body {
+      font-family: Arial, sans-serif;
+      background-color: #f4f4f4;
+      text-align: center;
+      padding: 50px 20px;
+    }
+
+    h1 {
+      font-size: 2.5em;
+      color: #222;
+      margin-bottom: 30px;
+    }
+
+    .card {
+      display: inline-block;
+      background-color: white;
+      padding: 30px;
+      border-radius: 20px;
+      box-shadow: 0 0 15px rgba(0,0,0,0.2);
+      min-width: 300px;
+    }
+
+    .zona {
+      font-size: 1.2em;
+      margin-bottom: 20px;
+    }
+
+    .estado {
+      font-size: 1.8em;
+      font-weight: bold;
+      padding: 20px;
+      border-radius: 10px;
+      margin-bottom: 15px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 10px;
+    }
+
+    .acceso {
+      background-color: #4CAF50;
+      color: white;
+    }
+
+    .denegado {
+      background-color: #f44336;
+      color: white;
+    }
+
+    .icon {
+      font-size: 1.5em;
+    }
+
+    .nombre {
+      font-size: 1.2em;
+    }
+  </style>
+</head>
+<body>
+  <h1>Acerque tarjeta al sensor</h1>
+  <div class="card" id="card">
+    <div class="zona" id="zona">Zona: -</div>
+    <div class="estado" id="estado">Esperando datos...</div>
+    <div class="nombre" id="nombre">Nombre: -</div>
+  </div>
+
+  <!-- Firebase SDK -->
+  <script src="https://www.gstatic.com/firebasejs/9.22.2/firebase-app-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/9.22.2/firebase-database-compat.js"></script>
+
+  <script>
+    const firebaseConfig = {
+      apiKey: "AIzaSyAAsaf9Xqi1sMGUmC606xh-wFpOQr0UxKQ",
+      authDomain: "database-72189.firebaseapp.com",
+      databaseURL: "https://database-72189-default-rtdb.firebaseio.com",
+      projectId: "database-72189",
+      storageBucket: "database-72189.appspot.com",
+      messagingSenderId: "444896561881",
+      appId: "1:444896561881:web:1d51ab7cd3a8e9b0ca4cc8",
+      measurementId: "G-0V5TV38RQS"
+    };
+
+    firebase.initializeApp(firebaseConfig);
+    const db = firebase.database();
+
+    // Recuperar zona desde localStorage o usar "oficina" por defecto
+    const zona = localStorage.getItem("selectedZone") || "oficina";
+    document.getElementById("zona").textContent = "Zona: " + zona.toUpperCase();
+
+    const estadoEl = document.getElementById("estado");
+    const nombreEl = document.getElementById("nombre");
+
+    // Escuchar en tiempo real el último registro
+    const registrosRef = db.ref("registros");
+
+    registrosRef.limitToLast(1).on("child_added", function(snapshot) {
+      const data = snapshot.val();
+
+      // Solo mostrar si coincide la zona
+      if (data.zona === zona) {
+        const autorizado = data.mensaje.toLowerCase().includes("autorizado");
+        estadoEl.className = "estado " + (autorizado ? "acceso" : "denegado");
+        estadoEl.innerHTML = (autorizado ? "✔️ Acceso autorizado" : "❌ Acceso denegado");
+        nombreEl.textContent = "Nombre: " + (data.nombre || "Desconocido");
+      }
+    });
+
+    registrosRef.limitToLast(1).on("child_changed", function(snapshot) {
+      const data = snapshot.val();
+      if (data.zona === zona) {
+        const autorizado = data.mensaje.toLowerCase().includes("autorizado");
+        estadoEl.className = "estado " + (autorizado ? "acceso" : "denegado");
+        estadoEl.innerHTML = (autorizado ? "✔️ Acceso autorizado" : "❌ Acceso denegado");
+        nombreEl.textContent = "Nombre: " + (data.nombre || "Desconocido");
+      }
+    });
+  </script>
+</body>
+</html>
 
