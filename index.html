@@ -3,81 +3,55 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
-  <title>Control de Acceso RFID</title>
+  <title>Lista de Accesos</title>
   <style>
     body {
-      font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+      font-family: Arial, sans-serif;
       background-color: #f4f4f4;
-      margin: 0;
-      padding: 0;
-      text-align: center;
+      padding: 20px;
     }
 
     h1 {
-      margin-top: 40px;
-      font-size: 2.5em;
-      color: #2c3e50;
-    }
-
-    .card {
-      margin: 40px auto;
-      padding: 30px;
-      width: 90%;
-      max-width: 500px;
-      border-radius: 15px;
-      box-shadow: 0 0 20px rgba(0, 0, 0, 0.15);
-      background-color: #fff;
-    }
-
-    .zona {
-      font-size: 1.5em;
-      color: #555;
-      margin-bottom: 10px;
-    }
-
-    .mensaje {
-      font-size: 2em;
-      font-weight: bold;
-      padding: 20px;
-      border-radius: 12px;
-      color: #fff;
-    }
-
-    .autorizado {
-      background-color: #28a745;
-    }
-
-    .denegado {
-      background-color: #dc3545;
-    }
-
-    .esperando {
-      background-color: #999;
-    }
-
-    .nombre {
-      margin-top: 10px;
-      font-size: 1.2em;
+      text-align: center;
       color: #333;
     }
 
-    .error {
-      color: red;
+    ul {
+      list-style: none;
+      padding: 0;
+      max-width: 800px;
+      margin: 0 auto;
+    }
+
+    li {
+      background-color: #fff;
+      margin-bottom: 15px;
+      padding: 15px;
+      border-radius: 8px;
+      box-shadow: 0 2px 5px rgba(0,0,0,0.1);
+    }
+
+    .zona {
       font-weight: bold;
-      margin-top: 20px;
+      color: #555;
+    }
+
+    .mensaje {
+      margin-top: 5px;
+    }
+
+    .timestamp {
+      font-size: 0.9em;
+      color: #888;
+      margin-top: 8px;
     }
   </style>
 </head>
 <body>
-  <h1>Acerque tarjeta al sensor</h1>
-
-  <div class="card">
-    <div class="zona" id="zona">Esperando lectura...</div>
-    <div class="mensaje esperando" id="mensaje">Esperando...</div>
-    <div class="nombre" id="nombre"></div>
-  </div>
-
-  <div id="error" class="error"></div>
+  <h1>Lista de Accesos</h1>
+  <ul id="listaAccesos">
+    <!-- Aquí se agregan los accesos -->
+  </ul>
 
   <!-- Firebase -->
   <script src="https://www.gstatic.com/firebasejs/9.22.2/firebase-app-compat.js"></script>
@@ -97,6 +71,7 @@
 
     firebase.initializeApp(firebaseConfig);
     const db = firebase.database();
+    const lista = document.getElementById("listaAccesos");
 
     const zonas = [
       { nombre: "almacen", ruta: "accesos/almacen" },
@@ -104,66 +79,29 @@
       { nombre: "mostrador", ruta: "registros/mostrador" }
     ];
 
-    const zonaDiv = document.getElementById('zona');
-    const mensajeDiv = document.getElementById('mensaje');
-    const nombreDiv = document.getElementById('nombre');
-    const errorDiv = document.getElementById('error');
-
-    async function getLastRegistro(ruta) {
-      try {
-        const res = await fetch(`https://database-72189-default-rtdb.firebaseio.com/${ruta}.json`);
-        if (!res.ok) throw new Error(`HTTP error! status: ${res.status}`);
-
-        const data = await res.json();
-        console.log(`Datos recibidos de ${ruta}:`, data);
-
-        if (!data) return null;
-
-        const keys = Object.keys(data);
-        if(keys.length === 0) return null;
-
-        const lastKey = keys[keys.length - 1];
-        return { ...data[lastKey], timestamp: data[lastKey].timestamp || 0 };
-      } catch (error) {
-        console.error("Error obteniendo datos de Firebase:", error);
-        errorDiv.textContent = `Error al obtener datos de ${ruta}: ${error.message}`;
-        return null;
-      }
+    function formatoFecha(timestamp) {
+      const fecha = new Date(timestamp);
+      return fecha.toLocaleString("es-MX");
     }
 
-    async function verificarAcceso() {
-      errorDiv.textContent = ''; // limpia errores cada ciclo
+    zonas.forEach(zona => {
+      const ref = db.ref(zona.ruta);
 
-      let ultimo = null;
+      ref.on("child_added", snapshot => {
+        const data = snapshot.val();
+        const li = document.createElement("li");
 
-      for (let z of zonas) {
-        const reg = await getLastRegistro(z.ruta);
-        if (reg && (!ultimo || reg.timestamp > ultimo.timestamp)) {
-          ultimo = { ...reg, zona: z.nombre };
-        }
-      }
+        li.innerHTML = `
+          <div class="zona">Zona: ${zona.nombre.toUpperCase()}</div>
+          <div>Nombre: ${data.nombre || 'Desconocido'}</div>
+          <div class="mensaje">Mensaje: ${data.mensaje || '---'}</div>
+          <div class="timestamp">Fecha: ${data.timestamp ? formatoFecha(data.timestamp) : '---'}</div>
+        `;
 
-      if (ultimo) {
-        zonaDiv.textContent = `Zona: ${ultimo.zona.toUpperCase()}`;
-        nombreDiv.textContent = ultimo.nombre ? `Nombre: ${ultimo.nombre}` : "";
-
-        if (ultimo.mensaje && ultimo.mensaje.toLowerCase().includes("autorizado")) {
-          mensajeDiv.textContent = "✅ Bienvenido";
-          mensajeDiv.className = "mensaje autorizado";
-        } else {
-          mensajeDiv.textContent = "❌ Acceso denegado";
-          mensajeDiv.className = "mensaje denegado";
-        }
-      } else {
-        zonaDiv.textContent = "Esperando lectura...";
-        mensajeDiv.textContent = "Esperando...";
-        mensajeDiv.className = "mensaje esperando";
-        nombreDiv.textContent = "";
-      }
-    }
-
-    setInterval(verificarAcceso, 2000);
-    verificarAcceso();
+        // Agregar al principio de la lista
+        lista.insertBefore(li, lista.firstChild);
+      });
+    });
   </script>
 </body>
 </html>
