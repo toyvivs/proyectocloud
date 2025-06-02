@@ -74,7 +74,7 @@
     ];
 
     zonas.forEach(zona => {
-      const ref = db.ref(zona.ruta); // usar compat aquí
+      const ref = db.ref(zona.ruta);
 
       ref.on("child_added", snapshot => {
         const data = snapshot.val();
@@ -86,10 +86,10 @@
           <div class="mensaje">Mensaje: ${data.mensaje || '---'}</div>
         `;
 
+        // Agrega el nuevo acceso arriba de la lista
         lista.insertBefore(li, lista.firstChild);
       });
     });
   </script>
 </body>
 </html>
-
