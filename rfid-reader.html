@@ -3,75 +3,55 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
-  <title>Control de Acceso</title>
+  <title>Lector RFID</title>
   <style>
     body {
       font-family: Arial, sans-serif;
-      background-color: #f4f4f4;
+      background: #f2f2f2;
       text-align: center;
-      padding: 50px 20px;
+      padding: 20px;
     }
-
     h1 {
       font-size: 2.5em;
-      color: #222;
-      margin-bottom: 30px;
-    }
-
-    .card {
-      display: inline-block;
-      background-color: white;
-      padding: 30px;
-      border-radius: 20px;
-      box-shadow: 0 0 15px rgba(0,0,0,0.2);
-      min-width: 300px;
-    }
-
-    .zona {
-      font-size: 1.2em;
       margin-bottom: 20px;
     }
-
-    .estado {
-      font-size: 1.8em;
-      font-weight: bold;
-      padding: 20px;
-      border-radius: 10px;
-      margin-bottom: 15px;
+    .zona-contenedor {
       display: flex;
-      align-items: center;
+      flex-wrap: wrap;
       justify-content: center;
-      gap: 10px;
+      gap: 20px;
+      margin-top: 30px;
     }
-
-    .acceso {
-      background-color: #4CAF50;
-      color: white;
+    .card {
+      width: 280px;
+      padding: 20px;
+      border-radius: 15px;
+      background: #fff;
+      box-shadow: 0 0 12px rgba(0, 0, 0, 0.1);
+      transition: 0.3s;
     }
-
-    .denegado {
-      background-color: #f44336;
-      color: white;
+    .success {
+      background: #d4edda;
+      border-left: 8px solid #28a745;
     }
-
-    .icon {
-      font-size: 1.5em;
+    .error {
+      background: #f8d7da;
+      border-left: 8px solid #dc3545;
     }
-
-    .nombre {
+    .card h2 {
       font-size: 1.2em;
+      margin: 0;
+    }
+    .card p {
+      margin: 5px 0;
     }
   </style>
 </head>
 <body>
   <h1>Acerque tarjeta al sensor</h1>
-  <div class="card" id="card">
-    <div class="zona" id="zona">Zona: -</div>
-    <div class="estado" id="estado">Esperando datos...</div>
-    <div class="nombre" id="nombre">Nombre: -</div>
-  </div>
+  <div class="zona-contenedor" id="zona-contenedor"></div>
 
-  <!-- Firebase SDK -->
+  <!-- Firebase SDK compat -->
   <script src="https://www.gstatic.com/firebasejs/9.22.2/firebase-app-compat.js"></script>
   <script src="https://www.gstatic.com/firebasejs/9.22.2/firebase-database-compat.js"></script>
 
@@ -90,38 +70,54 @@
     firebase.initializeApp(firebaseConfig);
     const db = firebase.database();
 
-    // Recuperar zona desde localStorage o usar "oficina" por defecto
-    const zona = localStorage.getItem("selectedZone") || "oficina";
-    document.getElementById("zona").textContent = "Zona: " + zona.toUpperCase();
+    const zonas = [
+      { nombre: "almacen", ruta: "accesos/almacen" },
+      { nombre: "oficina", ruta: "accesos/oficina" },
+      { nombre: "mostrador", ruta: "registros/mostrador" }
+    ];
 
-    const estadoEl = document.getElementById("estado");
-    const nombreEl = document.getElementById("nombre");
+    const contenedor = document.getElementById("zona-contenedor");
 
-    // Escuchar en tiempo real el último registro
-    const registrosRef = db.ref("registros");
+    const usuariosRef = db.ref("usuarios");
 
-    registrosRef.limitToLast(1).on("child_added", function(snapshot) {
-      const data = snapshot.val();
+    usuariosRef.once("value").then(snapshot => {
+      const nombres = snapshot.val() || {};
 
-      // Solo mostrar si coincide la zona
-      if (data.zona === zona) {
-        const autorizado = data.mensaje.toLowerCase().includes("autorizado");
-        estadoEl.className = "estado " + (autorizado ? "acceso" : "denegado");
-        estadoEl.innerHTML = (autorizado ? "✔️ Acceso autorizado" : "❌ Acceso denegado");
-        nombreEl.textContent = "Nombre: " + (data.nombre || "Desconocido");
-      }
-    });
+      zonas.forEach(z => {
+        const ref = db.ref(z.ruta);
 
-    registrosRef.limitToLast(1).on("child_changed", function(snapshot) {
-      const data = snapshot.val();
-      if (data.zona === zona) {
-        const autorizado = data.mensaje.toLowerCase().includes("autorizado");
-        estadoEl.className = "estado " + (autorizado ? "acceso" : "denegado");
-        estadoEl.innerHTML = (autorizado ? "✔️ Acceso autorizado" : "❌ Acceso denegado");
-        nombreEl.textContent = "Nombre: " + (data.nombre || "Desconocido");
-      }
+        ref.on("value", snapshot => {
+          const datos = snapshot.val();
+          if (!datos) return;
+
+          const claves = Object.keys(datos);
+          const ultimaClave = claves[claves.length - 1];
+          const registro = datos[ultimaClave];
+
+          let tarjeta = document.getElementById("zona-" + z.nombre);
+          if (!tarjeta) {
+            tarjeta = document.createElement("div");
+            tarjeta.className = "card";
+            tarjeta.id = "zona-" + z.nombre;
+            contenedor.appendChild(tarjeta);
+          }
+
+          const mensaje = registro.mensaje || "Sin mensaje";
+          const uid = ultimaClave;
+          const nombre = nombres[uid] || "Desconocido";
+
+          tarjeta.className = "card " + (mensaje.toLowerCase().includes("denegado") ? "error" : "success");
+
+          tarjeta.innerHTML = `
+            <h2>${mensaje}</h2>
+            <p>UID: ${uid}</p>
+            <p>Nombre: ${nombre}</p>
+            <p>Zona: ${z.nombre.toUpperCase()}</p>
+            <p>Hora: ${new Date().toLocaleTimeString()}</p>
+          `;
+        });
+      });
     });
   </script>
 </body>
 </html>
-
