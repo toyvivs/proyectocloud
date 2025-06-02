@@ -1,106 +1,77 @@
 <!DOCTYPE html>
 <html lang="es">
 <head>
-  <meta charset="utf-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>CONTROL DE ACCESO</title>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>Control de Acceso RFID</title>
   <style>
     body {
-      font-family: Arial, sans-serif;
+      font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
       background-color: #f4f4f4;
-      padding: 20px;
+      margin: 0;
+      padding: 0;
       text-align: center;
     }
 
-    .container {
-      max-width: 800px;
-      margin: auto;
-      background: #fff;
-      padding: 40px;
-      border-radius: 10px;
-      box-shadow: 0 0 15px rgba(0, 0, 0, 0.1);
+    h1 {
+      margin-top: 40px;
+      font-size: 2.5em;
+      color: #2c3e50;
     }
 
-    .zone-grid {
-      display: flex;
-      justify-content: space-around;
-      margin-top: 30px;
-      flex-wrap: wrap;
+    .card {
+      margin: 40px auto;
+      padding: 30px;
+      width: 90%;
+      max-width: 500px;
+      border-radius: 15px;
+      box-shadow: 0 0 20px rgba(0, 0, 0, 0.15);
+      background-color: #fff;
     }
 
-    .zone-card {
-      background: #e0e0e0;
-      padding: 20px;
-      border-radius: 10px;
-      width: 200px;
-      margin: 10px;
-      cursor: pointer;
-      transition: transform 0.2s ease, background-color 0.3s;
-    }
-
-    .zone-card:hover {
-      background: #c0c0c0;
-      transform: scale(1.05);
-    }
-
-    .zone-icon {
-      font-size: 3em;
-      display: block;
+    .zona {
+      font-size: 1.5em;
+      color: #555;
       margin-bottom: 10px;
     }
 
-    #registros {
-      margin-top: 40px;
-      text-align: left;
+    .mensaje {
+      font-size: 2em;
+      font-weight: bold;
+      padding: 20px;
+      border-radius: 12px;
+      color: #fff;
     }
 
-    #registros p {
-      background: #fff;
-      padding: 10px;
-      margin: 5px 0;
-      border-left: 4px solid #007bff;
+    .autorizado {
+      background-color: #28a745;
+    }
+
+    .denegado {
+      background-color: #dc3545;
+    }
+
+    .esperando {
+      background-color: #999;
+    }
+
+    .nombre {
+      margin-top: 10px;
+      font-size: 1.2em;
+      color: #333;
     }
   </style>
 </head>
 <body>
-  <div class="container">
-    <h1>BIENVENIDO</h1>
-    <p>Por favor, seleccione la zona a la que desea acceder:</p>
+  <h1>Acerque tarjeta al sensor</h1>
 
-    <div class="zone-grid">
-      <div class="zone-card" onclick="selectZone('almacen')">
-        <span class="zone-icon">📦</span>
-        <h2>Almacén</h2>
-        <p>Acceso a la zona de inventario y mercancías.</p>
-      </div>
-      <div class="zone-card" onclick="selectZone('oficina')">
-        <span class="zone-icon">🏢</span>
-        <h2>Oficina</h2>
-        <p>Área de trabajo para el personal administrativo.</p>
-      </div>
-      <div class="zone-card" onclick="selectZone('mostrador')">
-        <span class="zone-icon">🛒</span>
-        <h2>Mostrador</h2>
-        <p>Zona de atención al cliente y ventas.</p>
-      </div>
-    </div>
+  <div class="card">
+    <div class="zona" id="zona">Esperando lectura...</div>
+    <div class="mensaje esperando" id="mensaje">Esperando...</div>
+    <div class="nombre" id="nombre"></div>
   </div>
 
-  <div class="container">
-    <h2>Registros recientes</h2>
-    <div id="registros">
-      <p>Cargando registros...</p>
-    </div>
-  </div>
-
-  <script>
-    function selectZone(zone) {
-      localStorage.setItem('selectedZone', zone);
-      window.location.href = 'rfid-reader.html';
-    }
-  </script>
-
-  <!-- Firebase SDK compat -->
+  <!-- Firebase -->
   <script src="https://www.gstatic.com/firebasejs/9.22.2/firebase-app-compat.js"></script>
   <script src="https://www.gstatic.com/firebasejs/9.22.2/firebase-database-compat.js"></script>
 
@@ -119,25 +90,52 @@
     firebase.initializeApp(firebaseConfig);
     const db = firebase.database();
 
-    // Escuchar registros en tiempo real
-    const registrosRef = db.ref('registros');
-    registrosRef.on('value', (snapshot) => {
-      const data = snapshot.val();
-      const contenedor = document.getElementById('registros');
-      contenedor.innerHTML = '';
+    const zonas = ["almacen", "oficina", "mostrador"];
+    const zonaDiv = document.getElementById('zona');
+    const mensajeDiv = document.getElementById('mensaje');
+    const nombreDiv = document.getElementById('nombre');
 
-      if (data) {
-        const zonaFiltro = localStorage.getItem('selectedZone'); // mostrar registros según zona seleccionada
-        for (const uid in data) {
-          const registro = data[uid];
-          if (!zonaFiltro || registro.zona === zonaFiltro) {
-            contenedor.innerHTML += `<p><strong>${uid}</strong>: ${registro.mensaje} - ${registro.zona || "zona desconocida"} - ${registro.timestamp}</p>`;
-          }
+    async function getLastRegistro(zona) {
+      const res = await fetch(`https://database-72189-default-rtdb.firebaseio.com/registros/${zona}.json`);
+      const data = await res.json();
+      if (!data) return null;
+
+      const keys = Object.keys(data);
+      const lastKey = keys[keys.length - 1];
+      return { ...data[lastKey], zona, timestamp: data[lastKey].timestamp || 0 };
+    }
+
+    async function verificarAcceso() {
+      let ultimo = null;
+
+      for (let zona of zonas) {
+        const reg = await getLastRegistro(zona);
+        if (reg && (!ultimo || reg.timestamp > ultimo.timestamp)) {
+          ultimo = reg;
+        }
+      }
+
+      if (ultimo) {
+        zonaDiv.textContent = `Zona: ${ultimo.zona.toUpperCase()}`;
+        nombreDiv.textContent = ultimo.nombre ? `Nombre: ${ultimo.nombre}` : "";
+
+        if (ultimo.mensaje.toLowerCase().includes("autorizado")) {
+          mensajeDiv.textContent = "✅ Bienvenido";
+          mensajeDiv.className = "mensaje autorizado";
+        } else {
+          mensajeDiv.textContent = "❌ Acceso denegado";
+          mensajeDiv.className = "mensaje denegado";
         }
       } else {
-        contenedor.innerHTML = '<p>No hay registros disponibles.</p>';
+        zonaDiv.textContent = "Esperando lectura...";
+        mensajeDiv.textContent = "Esperando...";
+        mensajeDiv.className = "mensaje esperando";
+        nombreDiv.textContent = "";
       }
-    });
+    }
+
+    setInterval(verificarAcceso, 2000);
+    verificarAcceso();
   </script>
 </body>
 </html>
