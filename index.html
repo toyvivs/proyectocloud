@@ -1,95 +1,121 @@
 <!DOCTYPE html>
 <html lang="es">
 <head>
-  <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
-  <title>Lista de Accesos</title>
-  <style>
-    body {
-      font-family: Arial, sans-serif;
-      background-color: #f4f4f4;
-      padding: 20px;
-    }
-
-    h1 {
-      text-align: center;
-      color: #333;
-    }
-
-    ul {
-      list-style: none;
-      padding: 0;
-      max-width: 800px;
-      margin: 0 auto;
-    }
-
-    li {
-      background-color: #fff;
-      margin-bottom: 15px;
-      padding: 15px;
-      border-radius: 8px;
-      box-shadow: 0 2px 5px rgba(0,0,0,0.1);
-    }
-
-    .zona {
-      font-weight: bold;
-      color: #555;
-    }
-
-    .mensaje {
-      margin-top: 5px;
-    }
-  </style>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+    <title>Lista de Accesos</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <style>
+        /* Estilos personalizados para Tailwind CSS */
+        body {
+            font-family: 'Inter', sans-serif; /* Usando Inter como se recomienda */
+        }
+        /* Puedes añadir más estilos personalizados aquí si es necesario */
+    </style>
 </head>
-<body>
-  <h1>Lista de Accesos</h1>
-  <ul id="listaAccesos">
-    <!-- Accesos aparecerán aquí -->
-  </ul>
+<body class="bg-gray-100 p-4">
+    <h1 class="text-3xl font-bold text-center text-gray-800 mb-6">Lista de Accesos</h1>
+    <div id="listaAccesos" class="max-w-4xl mx-auto">
+        <p class="text-center text-gray-500">Cargando accesos...</p>
+    </div>
 
-  <!-- Firebase -->
-  <script src="https://www.gstatic.com/firebasejs/9.22.2/firebase-app-compat.js"></script>
-  <script src="https://www.gstatic.com/firebasejs/9.22.2/firebase-database-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/9.22.2/firebase-app-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/9.22.2/firebase-database-compat.js"></script>
 
-  <script>
-    const firebaseConfig = {
-      apiKey: "AIzaSyAAsaf9Xqi1sMGUmC606xh-wFpOQr0UxKQ",
-      authDomain: "database-72189.firebaseapp.com",
-      databaseURL: "https://database-72189-default-rtdb.firebaseio.com",
-      projectId: "database-72189",
-      storageBucket: "database-72189.appspot.com",
-      messagingSenderId: "444896561881",
-      appId: "1:444896561881:web:1d51ab7cd3a8e9b0ca4cc8",
-      measurementId: "G-0V5TV38RQS"
-    };
+    <script>
+        // Configuración de Firebase - ¡Asegúrate de que estos valores sean correctos para tu proyecto!
+        const firebaseConfig = {
+            apiKey: "AIzaSyAAsaf9Xqi1sMGUmC606xh-wFpOQr0UxKQ",
+            authDomain: "database-72189.firebaseapp.com",
+            databaseURL: "https://database-72189-default-rtdb.firebaseio.com",
+            projectId: "database-72189",
+            storageBucket: "database-72189.appspot.com",
+            messagingSenderId: "444896561881",
+            appId: "1:444896561881:web:1d51ab7cd3a8e9b0ca4cc8",
+            measurementId: "G-0V5TV38RQS"
+        };
 
-    firebase.initializeApp(firebaseConfig);
-    const db = firebase.database();
-    const lista = document.getElementById("listaAccesos");
+        // Inicializa la aplicación de Firebase
+        firebase.initializeApp(firebaseConfig);
+        const db = firebase.database(); // Obtiene la instancia de la base de datos
+        const listaAccesosContainer = document.getElementById("listaAccesos"); // Contenedor donde se mostrarán los accesos
 
-    const zonas = [
-      { nombre: "almacen", ruta: "accesos/almacen" },
-      { nombre: "oficina", ruta: "accesos/oficina" },
-      { nombre: "mostrador", ruta: "registros/mostrador" }
-    ];
+        // Define las zonas que se van a monitorear en Firebase
+        const zonas = [
+            { nombre: "almacen", ruta: "accesos/almacen" },
+            { nombre: "oficina", ruta: "accesos/oficina" },
+            { nombre: "mostrador", ruta: "accesos/mostrador" } // Corregida la ruta aquí
+        ];
 
-    zonas.forEach(zona => {
-      const ref = db.ref(zona.ruta);
+        // Objeto para almacenar los datos de acceso de todas las zonas
+        let todosLosAccesos = [];
 
-      ref.on("child_added", snapshot => {
-        const data = snapshot.val();
-        const li = document.createElement("li");
+        // Función para renderizar todos los accesos en la interfaz de usuario
+        function renderizarAccesos() {
+            // Limpia el contenido actual del contenedor
+            listaAccesosContainer.innerHTML = '';
 
-        li.innerHTML = `
-          <div class="zona">Zona: ${zona.nombre.toUpperCase()}</div>
-          <div>Nombre: ${data.nombre || 'Desconocido'}</div>
-          <div class="mensaje">Mensaje: ${data.mensaje || '---'}</div>
-        `;
+            if (todosLosAccesos.length === 0) {
+                listaAccesosContainer.innerHTML = '<p class="text-center text-gray-500">No hay accesos registrados.</p>';
+                return;
+            }
 
-        // Agrega el nuevo acceso arriba de la lista
-        lista.insertBefore(li, lista.firstChild);
-      });
-    });
-  </script>
+            // Ordena los accesos por timestamp de forma descendente (más recientes primero)
+            // Asegúrate de que tus datos de Firebase incluyan un campo 'timestamp'
+            // Esta línea se mantiene para el orden, aunque no se muestre la hora
+            todosLosAccesos.sort((a, b) => b.timestamp - a.timestamp);
+
+            // Itera sobre los accesos ordenados y crea los elementos HTML
+            todosLosAccesos.forEach(acceso => {
+                const li = document.createElement("div"); // Usamos div para más flexibilidad con Tailwind
+                li.className = 'bg-white rounded-lg shadow-md p-4 mb-4 flex flex-col space-y-1'; // Clases de Tailwind para estilo
+
+                li.innerHTML = `
+                    <div class="font-bold text-gray-700 text-lg">Zona: ${acceso.zona.toUpperCase()}</div>
+                    <div class="text-gray-600">Nombre: ${acceso.nombre || 'Desconocido'}</div>
+                    <div class="text-gray-800 text-base">${acceso.mensaje || '---'}</div>
+                    `;
+                listaAccesosContainer.appendChild(li);
+            });
+        }
+
+        // Configura un listener para cada zona
+        zonas.forEach(zona => {
+            const ref = db.ref(zona.ruta); // Obtiene la referencia a la ruta de la zona
+
+            // Usa 'value' para obtener todos los datos de la zona y escuchar cambios en tiempo real
+            ref.on("value", snapshot => {
+                const zonaData = snapshot.val(); // Obtiene todos los datos de la zona
+                const accesosDeEstaZona = [];
+
+                if (zonaData) {
+                    // Firebase Realtime Database devuelve un objeto. Necesitamos iterar sobre sus propiedades.
+                    // Cada propiedad es un ID de acceso único, y su valor es el objeto de acceso.
+                    Object.keys(zonaData).forEach(accesoId => {
+                        const acceso = zonaData[accesoId];
+                        // Añade la información de la zona al objeto de acceso
+                        accesosDeEstaZona.push({ ...acceso, zona: zona.nombre });
+                    });
+                }
+
+                // Actualiza los accesos de esta zona en el arreglo global
+                // Primero, elimina los accesos antiguos de esta zona
+                todosLosAccesos = todosLosAccesos.filter(acc => acc.zona !== zona.nombre);
+                // Luego, añade los nuevos accesos de esta zona
+                todosLosAccesos = todosLosAccesos.concat(accesosDeEstaZona);
+
+                // Vuelve a renderizar toda la lista con los datos actualizados
+                renderizarAccesos();
+
+            }, error => {
+                // Manejo de errores si la lectura falla
+                console.error(`Error al leer datos de la zona ${zona.nombre}:`, error);
+                listaAccesosContainer.innerHTML = `<p class="text-center text-red-500">Error al cargar los accesos de ${zona.nombre}.</p>`;
+            });
+        });
+
+        // Llama a renderizarAccesos inicialmente para mostrar el mensaje de carga
+        renderizarAccesos();
+    </script>
 </body>
 </html>
